@@ -67,6 +67,7 @@ white counter threshold = %d\r\nshift threshold = %d\r\n\n"%(initial_ri, initial
     return(path,initial_ri,initial_ro, size_step, number_steps, threshold1, threshold2)
 
 if __name__ =="__main__":
+    time_start = time.time()
     numbers = re.compile(r'(\d+)')
     subwellList = []
     dropList = []
@@ -78,7 +79,8 @@ if __name__ =="__main__":
         cv2.imwrite("Image Processing/Subwell/Subwell%d.jpg"%i, subwell)
         drop = fd.find_drop(subwell)
         cv2.imwrite("Image Processing/Drop/Drop%d.jpg"%i, drop)
-        
+    time_end = time.time()
+    print("total time: %d"%(time_end - time_start))
 ##        subwellList.append(subwell)
 ##    print(len(subwellList))
 else:
