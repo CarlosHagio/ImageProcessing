@@ -39,7 +39,7 @@ def find_circle_pixels(img_subwell):
 
 ## main function, find drop boundary coordinates
 def find_drop(img_subwell):
-    s = time.time()
+##    s = time.time()
     
     blur = cv2.medianBlur(img_subwell, 7)
 
@@ -82,8 +82,8 @@ def find_drop(img_subwell):
         loop_theta = 0
         
     
-    f = time.time()
-    print("drop time: %f\n" %(f-s))
+##    f = time.time()
+##    print("drop time: %f\n" %(f-s))
 
     return img_drop            
 if __name__ =="__main__":
