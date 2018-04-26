@@ -67,7 +67,7 @@ def find_drop(img_subwell):
 
     while loop_radius > 0:
         while loop_theta < 2*np.pi:
-            print(polar2cartesian(loop_radius, loop_theta))
+##            print(polar2cartesian(loop_radius, loop_theta))
             x_new,y_new = polar2cartesian(loop_radius, loop_theta)
             center_new = (int(x_new+x), int(y_new+y))
             cv2.circle(img_drop, center_new, drawing_circle_radius, (255,255,255), 2)
