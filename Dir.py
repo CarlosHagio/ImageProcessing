@@ -7,42 +7,36 @@ import argparse
 from glob import glob
 
 def find_beginning(save_dir, root_dir):
-##    list_images = glob(save_dir+'/*')
+
     beginning_path = root_dir
 
     plate_list = glob(save_dir+'/*')
-##    plate_list = os.listdir(save_dir)
+
     plate_index = len(plate_list)-1
     
     if plate_index >= 0:
-##        print("if")
+
         plate_string = max(plate_list, key = os.path.getctime)
-##        plate_string = plate_list[plate_index]
-##        batch_list = os.listdir(save_dir+'/'+plate_string)        
+        
         batch_list = glob(plate_string+'/*')
         print(batch_list)
         batch_index = len(batch_list)-1
         if batch_index >= 0:
-##            print("if")
-##            batch_string = batch_list[batch_index]
+
             batch_string = max(batch_list, key = os.path.getctime)
             batch_index = batch_list.index(batch_string)
             well_list = glob(batch_string+'/*')
-##            well_list = os.listdir(save_dir+'/'+plate_string+'/'+batch_string)
+            print(well_list)
             well_index = len(well_list)-1
             if well_index >= 0:
                 well_string = max(well_list, key = os.path.getctime)
                 well_index = well_list.index(well_string)
-##            if well_index >= 0:
-####                print("if")
-##                well_string = max(well_list, key = os.path.getctime)
             else:
                 well_index = 0
         else:
             batch_index = 0
 
     else:
-##        print("else")
         plate_string = os.listdir(root_dir)[0]
         plate_list = os.listdir(root_dir)
         plate_index = 0
@@ -55,16 +49,6 @@ def find_beginning(save_dir, root_dir):
         well_list = os.listdir(root_dir+'/'+plate_string+'/'+batch_string)
         well_index = 0
 
-##    plate_list = os.listdir(root_dir)
-##    plate_string = plate_list[plate_index]
-##
-##    batch_list = os.listdir(root_dir+'/'+plate_string)
-##    batch_string = batch_list[batch_index]
-##
-##    well_list = os.listdir(root_dir+'/'+plate_string+'/'+batch_string)
-##    well_string = os.listdir(root_dir+'/'+plate_string+'/'+batch_string)[well_index]
-
-##    return plate_index, batch_index, well_index, plate_list, batch_list, well_list
     return plate_index, batch_index, well_index
 
 def check_folder():
@@ -124,15 +108,14 @@ if __name__ == '__main__':
 ##    print(plate_index, batch_index, well_index, plate_list, batch_list, well_list)
     print(plate_index, batch_index, well_index)
 
-    
-
     plate_list = os.listdir('ImagensSSH')
     plate_list_size = len(plate_list)
     for plate_count in range(plate_index, plate_list_size):
         batch_list = os.listdir('ImagensSSH/'+plate_list[plate_count])
         batch_list_size = len(batch_list)
         for batch_count in range(batch_index, batch_list_size):
-            well_list = os.listdir('ImagensSSH/'+plate_list[plate_count]+'/'+batch_list[batch_count]) 
+            well_list = os.listdir('ImagensSSH/'+plate_list[plate_count]+'/'+batch_list[batch_count])
+            print(well_list)
             well_list_size = len(well_list)
             for well_count in range(well_index, well_list_size):
                 profiles = os.listdir('ImagensSSH/'+plate_list[plate_count]+'/'+batch_list[batch_count]+'/'+well_list[well_count])
@@ -141,7 +124,7 @@ if __name__ == '__main__':
                         files = os.listdir('ImagensSSH/'+plate_list[plate_count]+'/'+batch_list[batch_count]+'/'+well_list[well_count]+'/'+profile)
 ## 
                         dirName = os.path.dirname(__file__)
-                        folderName = os.path.join(dirName, 'Image Processing2/'+plate_list[plate_index]+'/'+batch_list[batch_count]+'/'+well_list[well_count]+'/'+profile)
+                        folderName = os.path.join(dirName, 'Image Processing2/'+plate_list[plate_count]+'/'+batch_list[batch_count]+'/'+well_list[well_count]+'/'+profile)
                         if not os.path.exists(folderName):
 ##                            print("folder: ",folderName)
                             os.makedirs(folderName)
@@ -152,10 +135,7 @@ if __name__ == '__main__':
 ##                                image_save_path_root = image_path.replace('/', '$')
                                 image_save_path_root = image_path.replace('ImagensSSH', 'Image Processing2')
                                 print(image_path)
-##                                image_save_path = image_path.replace('/', '$')
-##                                image_save_path = image_save_path.replace('ImagensSSH','Image Processing2/S')
-##                                print(image_save_path)
-##                                print(image_save_path_root)
+                                
                                 subwell = fs.find_subwell(image_path, initial_ri,initial_ro, size_step, number_steps, threshold1, threshold2)
                                 if subwell is not None:
                                     image_save_path = image_path.replace('.jpg','subwell.jpg')
