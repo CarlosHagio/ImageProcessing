@@ -19,14 +19,14 @@ def find_beginning(save_dir, root_dir):
         plate_string = max(plate_list, key = os.path.getctime)
         
         batch_list = glob(plate_string+'/*')
-        print(batch_list)
+##        print(batch_list)
         batch_index = len(batch_list)-1
         if batch_index >= 0:
 
             batch_string = max(batch_list, key = os.path.getctime)
             batch_index = batch_list.index(batch_string)
             well_list = glob(batch_string+'/*')
-            print(well_list)
+##            print(well_list)
             well_index = len(well_list)-1
             if well_index >= 0:
                 well_string = max(well_list, key = os.path.getctime)
