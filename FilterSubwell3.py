@@ -16,13 +16,13 @@ def shift_mask(mask, white, white_counter, xm, ym,ri,ro,rstep):
     delta_x = white_x.astype(np.int16) - xm.astype(np.int16) 
     delta_y = white_y.astype(np.int16) - ym.astype(np.int16)
 
-    delta_tan = delta_y/delta_x
+    delta_tan = delta_y/(delta_x+0.00000001)
     d = ro - math.hypot(delta_x, delta_y)
     ri = ri + np.uint16(np.around(d/10))
     ro = ro + np.uint16(np.around(d/10))
     
     shift_x = np.uint16(np.around(d/(10*(math.sqrt(1+delta_tan**2)))))
-    shift_y = np.uint16(np.around(d/(10*(math.sqrt(1+(1/delta_tan**2))))))
+    shift_y = np.uint16(np.around(d/(10*(math.sqrt(1+(1/(0.00000001+delta_tan**2)))))))
     
     if delta_x > 0:
         shift_x = -1*shift_x
@@ -66,46 +66,78 @@ def find_subwell(imgfile, initial_ri, initial_ro, size_step, number_steps, white
     thresh = cv2.adaptiveThreshold(blur, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,111,5)
     cv2.subtract(255, thresh, thresh)
 
+##    cv2.imshow("",img)
+##    cv2.waitKey()
+##    cv2.imshow("",blur)
+##    cv2.waitKey()
+##    cv2.imshow("",thresh)
+##    cv2.waitKey()
 
-    mask = np.zeros(shape, np.uint8)
-    mask = cv2.circle(mask, (xm, ym), rm, (255,255,255), delta_radius) #circular crown mask
-    mask_thresh = cv2.bitwise_and(thresh, thresh, mask = mask) #apply over contour image
-    
-    white = cv2.findNonZero(mask_thresh) #evaluate by the number of whites pixels
-    white_counter = len(white)
-    counter_aux = white_counter
-    delta = 0
 
-    for x in range(0, number_steps): #loop to find best subwell mask
-        if (white_counter > white_thresh):
-            mask_return = cv2.circle(np.zeros(shape, np.uint8), (xm, ym), rm, (255,255,255), -1)
-            masked = cv2.bitwise_and(img, img, mask = mask_return)
-##            cv2.imwrite('FilterSubwell %d.png'%(i), masked)
-##            print('i: %d     x: %d    w: %d    delta: %d' %(i, x, white_counter,delta))
-            return masked
-        elif (white_counter > shift_thresh) and (white_counter<white_thresh): #shift crown mask and make it a little bigger
-            xm,ym,ri,ro = shift_mask(mask, white, white_counter, xm,ym,ri,ro,rstep)
-            rm = np.uint16(np.around((ri+ro)/2))
-##            print("xm: %d\tym: %d\trm: %d\tw: %d\n"%(xm,ym,rm, white_counter))
-        else:   #try bigger circular crown mask
-            ri = ri + rstep
-            ro = ro + rstep
-            rm = np.uint16(np.around((ri+ro)/2))
-
-##            print("rm: %d\tw: %d\n"%(rm,white_counter))
+    while(True):        
         mask = np.zeros(shape, np.uint8)
         mask = cv2.circle(mask, (xm, ym), rm, (255,255,255), delta_radius) #circular crown mask
         mask_thresh = cv2.bitwise_and(thresh, thresh, mask = mask) #apply over contour image
-
-        white = cv2.findNonZero(mask_thresh) #evaluate by the number of whites pixels
-        aux_counter = white_counter
-        if white is not None:
-            white_counter = len(white)
-        else:
-            white_counter = 0
         
-        delta = white_counter - aux_counter
+        white = cv2.findNonZero(mask_thresh) #evaluate by the number of whites pixels
+        if white is not None:
+            break
+        else:
+            rm = rm+1
+        if rm > shape[1]:
+            print("FilterSubwell3 error: low image quality")
+            return None
+
+##    cv2.imshow("",mask_thresh)
+##    cv2.waitKey()
+
+    white_counter = len(white)
+    counter_aux = white_counter
+    delta = 0
+    
+    while(True):
+        for x in range(0, number_steps): #loop to find best subwell mask
+            if (white_counter > white_thresh):
+                mask_return = cv2.circle(np.zeros(shape, np.uint8), (xm, ym), rm, (255,255,255), -1)
+                masked = cv2.bitwise_and(img, img, mask = mask_return)
+                break
+            elif (white_counter > shift_thresh) and (white_counter<white_thresh): #shift crown mask and make it a little bigger
+                xm,ym,ri,ro = shift_mask(mask, white, white_counter, xm,ym,ri,ro,rstep)
+                rm = np.uint16(np.around((ri+ro)/2))
+            else:   #try bigger circular crown mask
+                ri = ri + rstep
+                ro = ro + rstep
+                rm = np.uint16(np.around((ri+ro)/2))
+
+            mask = np.zeros(shape, np.uint8)
+            mask = cv2.circle(mask, (xm, ym), rm, (255,255,255), delta_radius) #circular crown mask
+            mask_thresh = cv2.bitwise_and(thresh, thresh, mask = mask) #apply over contour image
+
+            white = cv2.findNonZero(mask_thresh) #evaluate by the number of whites pixels
+            aux_counter = white_counter
+            if white is not None:
+                white_counter = len(white)
+            else:
+                white_counter = 0
             
+            delta = white_counter - aux_counter
+
+        if white_counter <= white_thresh:
+            white_thresh = white_thresh - 50
+            numbers = re.compile(r'(\d+)')
+            ri = initial_ri
+            ro = initial_ro
+            delta_radius = ro - ri
+            rm = np.uint16(np.around((ri+ro)/2))
+            ym = shape[0]
+            xm = shape[1]
+            xm = np.uint16(np.around(xm/2))
+            ym = np.uint16(np.around(ym/2))
+        elif white_counter > white_thresh:
+            break
+    return masked
+##    cv2.imshow("",masked)
+##    cv2.waitKey()       
 if __name__ =="__main__":
 ##  TEST FOR ONE IMAGE
     path = "/mnt/c/Users/carlos.hagio/Desktop/OpenCV/OpenCV/RankerPython/Media/vis2/image vis79.jpg"

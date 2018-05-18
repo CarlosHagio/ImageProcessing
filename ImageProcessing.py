@@ -1,6 +1,9 @@
 import cv2
 import numpy as np
 from matplotlib import pyplot as plt
+from LBP import LocalBinaryPatterns
+from sklearn.svm import LinearSVC
+from imutils import paths
 
 import os
 import time
@@ -18,6 +21,24 @@ def numericalSort(value):
     parts = numbers.split(value)
     parts[1::2] = map(int, parts[1::2])
     return parts
+
+def start_SVC(path_training):
+    numbers = re.compile(r'(\d+)')
+    desc = LocalBinaryPatterns(24,8)
+    data = []
+    labels = []
+
+    for imgTrainingPath in glob.glob(path_training):
+        print(imgTrainingPath)
+        imgTraining = cv2.imread(imgTrainingPath, 0)
+        hist = desc.describe(imgTraining)
+        labels.append(re.sub('\d+''.jpg', '', imgTrainingPath.split('/')[-1]))
+        data.append(hist)
+
+##    print(labels)
+    model = LinearSVC(C = 100.0, random_state = 42)
+    model.fit(data,labels)
+    return model, desc
 
 ##GET ARGUMENTS FROM EACH LINE OF --input ARGUMENT FILE
 ##PATH IS THE PATH OF THE IMAGES
@@ -58,13 +79,15 @@ def get_args():
     number_steps = int((lines_input[5].replace('numbersteps = ', '')).rstrip('\n'))
     threshold1 = int((lines_input[6].replace('threshold1 = ', '')).rstrip('\n'))
     threshold2 = int((lines_input[7].replace('threshold2 = ', '')).rstrip('\n'))
+
+    path_training = lines_input[8] = (lines_input[8].replace('path_training = ', '')).rstrip('\n')
     
     delta = number_steps*size_step
     file_output.write("ri = %d-%d\r\nro = %d-%d\r\n\nstep size = %d\r\nnumber of steps = %d\r\/\
 white counter threshold = %d\r\nshift threshold = %d\r\n\n"%(initial_ri, initial_ri + delta, initial_ro,
                                      initial_ro + delta, size_step, number_steps, threshold1, threshold2))
 
-    return(path,initial_ri,initial_ro, size_step, number_steps, threshold1, threshold2)
+    return(path,initial_ri,initial_ro, size_step, number_steps, threshold1, threshold2,path_training)
 
 if __name__ =="__main__":
     time_start = time.time()
@@ -72,15 +95,20 @@ if __name__ =="__main__":
     subwellList = []
     dropList = []
 ##    MAKE SUBWELL FILTERED LIST OF IMAGES
-    path,initial_ri,initial_ro, size_step, number_steps, threshold1, threshold2 = get_args()
+    path,initial_ri,initial_ro, size_step, number_steps, threshold1, threshold2,path_training = get_args()
+
+    modelSVC, desc = start_SVC(path_training)
     for imgfile in sorted(glob.glob(path), key=numericalSort):
+        print(imgfile)
         i = int(numbers.findall(imgfile)[1])
         subwell = fs.find_subwell(imgfile, initial_ri,initial_ro, size_step, number_steps, threshold1, threshold2)
         cv2.imwrite("Image Processing/Subwell/Subwell%d.jpg"%i, subwell)
+##        drop = fd.find_drop(subwell,modelSVC, desc)
         drop = fd.find_drop(subwell)
         cv2.imwrite("Image Processing/Drop/Drop%d.jpg"%i, drop)
     time_end = time.time()
-    print("total time: %d"%(time_end - time_start))
+
+    print("total time: %d" %(time_end - time_start))
 ##        subwellList.append(subwell)
 ##    print(len(subwellList))
 else:

@@ -172,8 +172,10 @@ def organize_cluster_list(cluster_list):
 ##            elif check == 'dont merge':
 ##                print('dont merge')
 ##                print(organized_clusters)
-                x = x-1
-                y = y-1
+                if x > 0:
+                    x = x-1
+                if y > 0:
+                    y = y-1
             y = y+1
         x = x+1
 ##    print("desorganizado")
@@ -366,12 +368,14 @@ def find_drop(img_subwell):
         for point in missing:
             cv2.circle(img_drop, point[0], 5, (0,0,0), -1)
             print(point)
-##        print("\n\n\ncircle:")
-##        for circle in not_clean_circles:
-##            print(circle)
-##        print("\n\n\ncluster:")
-##        for cluster in cluster_test:
-##            print(cluster)
+##        cv2.imshow("",img_drop)
+##        cv2.waitKey()
+####        print("\n\n\ncircle:")
+####        for circle in not_clean_circles:
+####            print(circle)
+####        print("\n\n\ncluster:")
+####        for cluster in cluster_test:
+####            print(cluster)
 
 ##        print(not_clean_circles)
 ##        print(cluster_test)
