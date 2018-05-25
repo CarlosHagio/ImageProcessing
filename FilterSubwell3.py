@@ -6,7 +6,38 @@ import math
 
 #MINOR SUBWELL MASK SHIFT
 
-def shift_mask(mask, white, white_counter, xm, ym,ri,ro,rstep):
+##def shift_mask(mask, white, white_counter, xm, ym,ri,ro,rstep):
+##    avrg = reduce(lambda x,y:x+y, white)/white_counter
+##    avrg = np.uint16(np.around(avrg))
+##
+##    white_x = avrg[0][0]
+##    white_y = avrg[0][1]
+##
+##    delta_x = white_x.astype(np.int16) - xm.astype(np.int16) 
+##    delta_y = white_y.astype(np.int16) - ym.astype(np.int16)
+##
+##    delta_tan = delta_y/(delta_x+0.00000001)
+##    d = ro - math.hypot(delta_x, delta_y)
+##    ri = ri + np.uint16(np.around(d/10))
+##    ro = ro + np.uint16(np.around(d/10))
+##    
+##    shift_x = np.uint16(np.around(d/(10*(math.sqrt(1+delta_tan**2)))))
+##    shift_y = np.uint16(np.around(d/(10*(math.sqrt(1+(1/(0.00000001+delta_tan**2)))))))
+##    
+##    if delta_x > 0:
+##        shift_x = -1*shift_x
+##    if delta_y > 0:
+##        shift_y = -1*shift_y
+##
+####    print(shift_x, shift_y)
+##    
+##    xm = xm + shift_x.astype(np.int16)
+##    ym = ym + shift_y.astype(np.int16)
+##
+##    return xm,ym,ri,ro
+
+def shift_mask(thresh, mask, white, white_counter, xm, ym,ri,ro,rstep):
+##    print("shift")
     avrg = reduce(lambda x,y:x+y, white)/white_counter
     avrg = np.uint16(np.around(avrg))
 
@@ -18,12 +49,14 @@ def shift_mask(mask, white, white_counter, xm, ym,ri,ro,rstep):
 
     delta_tan = delta_y/(delta_x+0.00000001)
     d = ro - math.hypot(delta_x, delta_y)
-    ri = ri + np.uint16(np.around(d/10))
-    ro = ro + np.uint16(np.around(d/10))
-    
-    shift_x = np.uint16(np.around(d/(10*(math.sqrt(1+delta_tan**2)))))
-    shift_y = np.uint16(np.around(d/(10*(math.sqrt(1+(1/(0.00000001+delta_tan**2)))))))
-    
+    ri = ri + np.uint16(np.around(d/100))
+    ro = ro + np.uint16(np.around(d/100))
+    rm = np.uint16(np.around((ri+ro)/2))
+    delta_radius = ro - ri
+
+    shift_x = np.uint16(np.around(d/(100*(math.sqrt(1+delta_tan**2)))))
+    shift_y = np.uint16(np.around(d/(100*(math.sqrt(1+(1/(0.00000001+delta_tan**2)))))))
+            
     if delta_x > 0:
         shift_x = -1*shift_x
     if delta_y > 0:
@@ -31,6 +64,78 @@ def shift_mask(mask, white, white_counter, xm, ym,ri,ro,rstep):
 
     xm = xm + shift_x.astype(np.int16)
     ym = ym + shift_y.astype(np.int16)
+
+    white_counter_aux = white_counter
+    white_counter_memory = 0
+    shift_x_memory = 0
+    shift_y_memory = 0
+    
+    while(True):
+
+        mask = np.zeros(thresh.shape, np.uint8)
+        mask = cv2.circle(mask, (xm, ym), rm, (255,255,255), delta_radius) #circular crown mask
+        mask_thresh = cv2.bitwise_and(thresh, thresh, mask = mask) #apply over contour image
+
+##        cv2.imshow("",mask_thresh)
+##        cv2.waitKey()
+           
+        white= cv2.findNonZero(mask_thresh) #evaluate by the number of whites pixels
+        if white is not None:
+            white_counter = len(white)
+##            if white_counter>white_counter_aux:
+##                break
+        else:
+            white_counter = 0
+##        aux_counter = white_counter
+        if white_counter > white_counter_memory:
+##            print("loop")
+##            cv2.imshow("", mask_thresh)
+##            cv2.waitKey()
+            white_counter_memory = white_counter
+
+            avrg = reduce(lambda x,y:x+y, white)/white_counter
+            avrg = np.uint16(np.around(avrg))
+
+            white_x = avrg[0][0]
+            white_y = avrg[0][1]
+##            print(white_x, white_y)
+            delta_x = white_x.astype(np.int16) - xm.astype(np.int16) 
+            delta_y = white_y.astype(np.int16) - ym.astype(np.int16)
+
+            delta_tan = delta_y/(delta_x+0.00000001)
+            d = ro - math.hypot(delta_x, delta_y)
+##            ri = ri + np.uint16(np.around(d/100))
+##            ro = ro + np.uint16(np.around(d/100))
+##            rm = np.uint16(np.around((ri+ro)/2))
+##            delta_radius = ro - ri
+
+            shift_x = np.uint16(np.around(d/(100*(math.sqrt(1+delta_tan**2)))))
+            shift_y = np.uint16(np.around(d/(100*(math.sqrt(1+(1/(0.00000001+delta_tan**2)))))))
+                    
+            if delta_x > 0:
+                shift_x = -1*shift_x
+            if delta_y > 0:
+                shift_y = -1*shift_y
+
+            if (shift_x == -1*shift_x_memory and shift_y == -1*shift_y_memory):
+                break
+            else:
+                shift_x_memory = shift_x
+                shift_y_memory = shift_y
+
+            xm = xm + shift_x.astype(np.int16)
+            ym = ym + shift_y.astype(np.int16)
+        else:
+##            print("else: ",white_counter, white_counter_memory, rm)
+            xm = xm - shift_x.astype(np.int16)
+            ym = ym - shift_y.astype(np.int16)
+            break
+
+##        print("end: ", white_counter, white_counter_memory, rm)
+##    print(shift_x, shift_y)
+    
+##    xm = xm + shift_x.astype(np.int16)
+##    ym = ym + shift_y.astype(np.int16)
 
     return xm,ym,ri,ro
 
@@ -96,25 +201,35 @@ def find_subwell(imgfile, initial_ri, initial_ro, size_step, number_steps, white
     delta = 0
     
     while(True):
+        white_counter_memory = 0
         for x in range(0, number_steps): #loop to find best subwell mask
+##            print(white_counter, white_thresh, shift_thresh)
+##            print(white_counter, white_counter_memory)
             if (white_counter > white_thresh):
                 mask_return = cv2.circle(np.zeros(shape, np.uint8), (xm, ym), rm, (255,255,255), -1)
                 masked = cv2.bitwise_and(img, img, mask = mask_return)
                 break
             elif (white_counter > shift_thresh) and (white_counter<white_thresh): #shift crown mask and make it a little bigger
-                xm,ym,ri,ro = shift_mask(mask, white, white_counter, xm,ym,ri,ro,rstep)
+##                print("shift")
+                xm,ym,ri,ro = shift_mask(thresh, mask, white, white_counter, xm,ym,ri,ro,rstep)
                 rm = np.uint16(np.around((ri+ro)/2))
             else:   #try bigger circular crown mask
+##                print("bigger")
                 ri = ri + rstep
                 ro = ro + rstep
                 rm = np.uint16(np.around((ri+ro)/2))
-
+            
             mask = np.zeros(shape, np.uint8)
             mask = cv2.circle(mask, (xm, ym), rm, (255,255,255), delta_radius) #circular crown mask
             mask_thresh = cv2.bitwise_and(thresh, thresh, mask = mask) #apply over contour image
-
+##
+##            cv2.imshow("",mask_thresh)
+##            cv2.waitKey()
+            
             white = cv2.findNonZero(mask_thresh) #evaluate by the number of whites pixels
             aux_counter = white_counter
+                
+            white_counter_memory = white_counter
             if white is not None:
                 white_counter = len(white)
             else:
@@ -123,6 +238,7 @@ def find_subwell(imgfile, initial_ri, initial_ro, size_step, number_steps, white
             delta = white_counter - aux_counter
 
         if white_counter <= white_thresh:
+##            print("novo white_thresh")
             white_thresh = white_thresh - 50
             numbers = re.compile(r'(\d+)')
             ri = initial_ri
@@ -133,14 +249,27 @@ def find_subwell(imgfile, initial_ri, initial_ro, size_step, number_steps, white
             xm = shape[1]
             xm = np.uint16(np.around(xm/2))
             ym = np.uint16(np.around(ym/2))
+
+##            print(white_thresh)
         elif white_counter > white_thresh:
             break
+
+
+    rm = np.uint16(np.around((ri+ro)/2))
+    mask_return = cv2.circle(np.zeros(shape, np.uint8), (xm, ym), ro, (255,255,255), -1)
+    masked = cv2.bitwise_and(img, img, mask = mask_return)  
+##    
     return masked
+        
+        
+
 ##    cv2.imshow("",masked)
 ##    cv2.waitKey()       
 if __name__ =="__main__":
 ##  TEST FOR ONE IMAGE
-    path = "/mnt/c/Users/carlos.hagio/Desktop/OpenCV/OpenCV/RankerPython/Media/vis2/image vis79.jpg"
-    find_subwell(path, 300, 400, 30, 20, 50000,35000) 
+    path = "/mnt/c/Users/carlos.hagio/Desktop/OpenCV/OpenCV/RankerPython/Media/vis2/image vis55.jpg"
+    img = find_subwell(path, 250, 350, 1, 200, 50000,35000)
+    cv2.imshow("",img)
+    cv2.waitKey()
 else:
     print("Importing FilterSubwell.py")

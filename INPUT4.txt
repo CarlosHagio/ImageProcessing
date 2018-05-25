@@ -1,0 +1,9 @@
+path = Media/vis2/image vis*
+output = OUTPUT
+ri = 250
+ro = 350
+stepsize = 1
+numbersteps = 2000
+threshold1 = 50000
+threshold2 = 35000
+path_training = Textura/Training Data/*
